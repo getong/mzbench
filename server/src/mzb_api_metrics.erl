@@ -1,4 +1,5 @@
 -module(mzb_api_metrics).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([get_metrics/5,
          extract_metric_names/1]).
@@ -13,8 +14,8 @@ get_metrics(UserName, DirNode, Host, RemoteScriptPath, RemoteEnvPath) ->
     try
         jiffy:decode(Res, [return_maps])
     catch
-        C:E ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(C, E, Stack) ->
+            ST = ?GET_STACK(Stack),
             lager:error("Failed to parse metrics names cause of ~p~nOutput: ~p~nStacktrace: ~p", [E, Res, ST]),
             erlang:raise(C,E,ST)
     end.
@@ -23,5 +24,3 @@ extract_metric_names(#{groups:= Groups} = _Metrics) ->
     [Name || #{graphs:= Graphs} <- Groups, #{metrics:= Metrics} <- Graphs, #{name:= Name} <- Metrics];
 extract_metric_names(#{}) ->
     [].
-
-

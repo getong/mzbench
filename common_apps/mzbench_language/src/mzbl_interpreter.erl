@@ -10,8 +10,8 @@ eval_std(Expr, Env) ->
         {Res, _} = eval(Expr, undefined, Env, undefined),
         Res
     catch
-        error:{mzbl_interpreter_runtime_error, {{E, R}, _}} ->
-            erlang:raise(E, R, erlang:get_stacktrace())
+        ?EXCEPTION(error, {mzbl_interpreter_runtime_error, {{E, R}, _}}, Stacktrace) ->
+            erlang:raise(E, R, ?GET_STACK(Stacktrace))
     end.
 
 -spec eval(script_expr(), worker_state(), worker_env(), module())
@@ -21,10 +21,10 @@ eval(Expr, State, Env, WorkerProvider) ->
     try
         eval_(Expr, State, Env, WorkerProvider)
     catch
-        error:{mzbl_interpreter_runtime_error, _} = E ->
-            erlang:raise(error, E, erlang:get_stacktrace());
-        E:R ->
-            erlang:raise(error, {mzbl_interpreter_runtime_error, {{E, R}, State}}, erlang:get_stacktrace())
+        ?EXCEPTION(error, {mzbl_interpreter_runtime_error, _} = E, Stacktrace) ->
+            erlang:raise(error, E, ?GET_STACK(Stacktrace));
+        ?EXCEPTION(E, R, Stacktrace) ->
+            erlang:raise(error, {mzbl_interpreter_runtime_error, {{E, R}, State}}, ?GET_STACK(Stacktrace))
     end.
 
 -spec eval_(script_expr(), worker_state(), worker_env(), module())

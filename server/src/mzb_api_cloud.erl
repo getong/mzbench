@@ -1,6 +1,7 @@
 -module(mzb_api_cloud).
 
 -behaviour(gen_server).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 %% API
 -export([start_link/0,
@@ -37,9 +38,9 @@ destroy_cluster(Id) ->
                 gen_server:call(?MODULE, {deallocated, Id}, infinity),
                 ok
             catch
-                C:E ->
+                ?EXCEPTION(C, E, Stacktrace) ->
                     gen_server:call(?MODULE, {deallocation_failed, Id, E}, infinity),
-                    erlang:raise(C, E, erlang:get_stacktrace())
+                    erlang:raise(C, E, ?GET_STACK(Stacktrace))
             end;
         {error, Error} ->
             erlang:error(Error)
@@ -88,9 +89,9 @@ handle_call({get_allocator, BenchId, Cloud, N, Config}, _From, State = #{cluster
                         gen_server:call(Self, {allocated, Id, Cluster, User, Hosts}, infinity),
                         {ok, Id, User, Hosts}
                     catch
-                        C:E ->
+                        ?EXCEPTION(C, E, Stacktrace) ->
                             gen_server:call(Self, {allocation_failed, Id, E}, infinity),
-                            erlang:raise(C, E, erlang:get_stacktrace())
+                            erlang:raise(C, E, ?GET_STACK(Stacktrace))
                     end
                 end,
             {reply, {ok, F}, State#{cluster_id:= Id + 1}};

@@ -1,4 +1,5 @@
 -module(mzb_api_connection).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([start_and_link_with/6,
          send_message/2,
@@ -18,8 +19,8 @@ start_and_link_with(PidToLinkWith, Purpose, Host, Port, Dispatcher, State) ->
             {error, Reason} ->
                 Self ! {self(), failed, Reason}
         catch
-            C:E ->
-                ST = erlang:get_stacktrace(),
+            ?EXCEPTION(C, E, Stack) ->
+                ST = ?GET_STACK(Stack),
                 Self ! {self(), failed, {C, E, ST}}
         end
     end),

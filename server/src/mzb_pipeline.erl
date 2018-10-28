@@ -18,6 +18,8 @@
     code_change/3
 ]).
 
+-include_lib("mzbench_language/include/mzbl_types.hrl").
+
 -record(state, {stage       = undefined :: undefined | {pid(), atom(), atom()},
                 module      = undefined :: undefined | module(),
                 ref         = undefined :: undefined | reference(),
@@ -172,12 +174,10 @@ handle_cast({workflow, start, Phase, Stage, Ref}, State = #state{ref = Ref, modu
                 StageResult = Module:handle_stage(Phase, Stage, UserState),
                 gen_server:cast(Self, {workflow, complete, Phase, Stage, Ref, StageResult})
             catch
-                C:{exception, E, Fn} ->
-                    ST = erlang:get_stacktrace(),
-                    gen_server:cast(Self, {workflow, exception, Phase, Stage, Ref, {C, E, ST, Fn}});
-                C:E ->
-                    ST = erlang:get_stacktrace(),
-                    gen_server:cast(Self, {workflow, exception, Phase, Stage, Ref, {C, E, ST, undefined}})
+                ?EXCEPTION(C, {exception, E, Fn}, Stacktrace) ->
+                    gen_server:cast(Self, {workflow, exception, Phase, Stage, Ref, {C, E, ?GET_STACK(Stacktrace), Fn}});
+                ?EXCEPTION(C, E, Stacktrace) ->
+                    gen_server:cast(Self, {workflow, exception, Phase, Stage, Ref, {C, E, ?GET_STACK(Stacktrace), undefined}})
             end
         end),
     NewState = change_pipeline_status({start, Phase, Stage}, State),

@@ -1,4 +1,5 @@
 -module(mzb_api_ws_handler).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([init/2,
          terminate/3,
@@ -754,8 +755,8 @@ filter_dashboards(List, Query) ->
           {match, _} -> true;
                    _ -> false
         end end, List)
-    catch _:Error ->
-        lager:error("Failed to apply dashboard filter: ~p ~p~n Query: ~p -- List ~p", [Error, erlang:get_stacktrace(), Query, List]),
+    catch ?EXCEPTION(_, Error, Stacktrace) ->
+        lager:error("Failed to apply dashboard filter: ~p ~p~n Query: ~p -- List ~p", [Error, ?GET_STACK(Stacktrace), Query, List]),
         []
     end.
 
@@ -807,8 +808,8 @@ is_satisfy_fields(Query, BenchInfo) ->
                       ({exact, Field}) ->
                           Field == Query
                   end, SearchFields)
-    catch _:Error ->
-        lager:error("Failed to apply filter: ~p ~p~n Query: ~p -- BenchInfo ~p", [Error, erlang:get_stacktrace(), Query, BenchInfo]),
+    catch ?EXCEPTION(_, Error, Stacktrace) ->
+        lager:error("Failed to apply filter: ~p ~p~n Query: ~p -- BenchInfo ~p", [Error, ?GET_STACK(Stacktrace), Query, BenchInfo]),
         false
     end.
 

@@ -1,4 +1,5 @@
 -module(mzb_api_ec2_plugin).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([start/2, create_cluster/3, destroy_cluster/1]).
 
@@ -32,8 +33,8 @@ create_cluster(Opts = #{instance_user:= UserName}, NumNodes, Config) when is_int
         wait_nodes_ssh(IPs, ?MAX_POLL_COUNT),
         {ok, {Opts, Ids}, UserName, IPs}
     catch
-        C:E ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(C, E, Stack) ->
+            ST = ?GET_STACK(Stack),
             destroy_cluster({Opts, Ids}),
             erlang:raise(C,E,ST)
     end.

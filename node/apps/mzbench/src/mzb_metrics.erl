@@ -1,4 +1,5 @@
 -module(mzb_metrics).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([start_link/4,
          declare_metric/5,
@@ -267,7 +268,7 @@ evaluate_derived_metrics(#s{metric_groups = MetricGroups} = State) ->
             undefined -> ok; % nothing was calculated
             Val -> global_set(Name, gauge, Val)
         catch
-            _:Reason -> system_log:error("Failed to evaluate derived metrics:~nWorker: ~p~nFunction: ~p~nReason: ~p~nStacktrace: ~p~n", [Worker, Resolver, Reason, erlang:get_stacktrace()])
+            ?EXCEPTION(_, Reason, Stacktrace) -> system_log:error("Failed to evaluate derived metrics:~nWorker: ~p~nFunction: ~p~nReason: ~p~nStacktrace: ~p~n", [Worker, Resolver, Reason, ?GET_STACK(Stacktrace)])
         end
     end, DerivedMetrics),
     system_log:debug("[ metrics ] Current metrics values:~n~s", [format_global_metrics()]),

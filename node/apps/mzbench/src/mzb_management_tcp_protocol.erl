@@ -1,4 +1,5 @@
 -module(mzb_management_tcp_protocol).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
@@ -34,8 +35,8 @@ dispatch({request, Ref, Msg}, State) ->
         {reply, Reply} -> ReplyFun(Reply);
         noreply -> ok
     catch
-        C:Error ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(C, Error, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             system_log:error("Api server message handling exception: ~p~n~p", [Error, ST]),
             send_message({response, Ref, {exception, {C, Error, ST}}}, State)
     end,
@@ -76,8 +77,8 @@ handle_message({connect_nodes, HostsAndPorts}, ReplyFun) ->
         end (_Retries = 10),
         noreply
     catch
-        _:E ->
-            system_log:error("Connecting nodes error: ~p~n~p", [E, erlang:get_stacktrace()]),
+        ?EXCEPTION(_, E, Stacktrace) ->
+            system_log:error("Connecting nodes error: ~p~n~p", [E, ?GET_STACK(Stacktrace)]),
             {reply, {error, E}}
     end;
 

@@ -40,7 +40,7 @@ run_script(Script, Env) ->
     ok = application:start(inets),
     {ok, _} = net_kernel:start([nodename_gen(), shortnames]),
 
-    setup_logger([{lager_console_backend, info}]),
+    setup_logger([{lager_console_backend, {level, info}}]),
 
     {ok, _} = application:ensure_all_started(mzbench),
 
@@ -67,8 +67,7 @@ parse_args(["--pa", P | T], Res) ->
     parse_args(T, [{pa, P}|Res]).
 
 validate(Script, Env) ->
-    setup_logger([]),
-
+setup_logger([{lager_console_backend, {level, info}}]),
     ok = application:load(mzbench),
 
     case mzb_script_validator:read_and_validate(filename:absname(Script), Env) of
@@ -91,9 +90,11 @@ setup_logger(Handlers) ->
     ok = application:set_env(lager, handlers, Handlers),
     ok = application:set_env(lager, crash_log, undefined),
     ok = application:set_env(lager, extra_sinks, [{system_log_lager_event, [{handlers, Handlers}]}]),
-    {ok, _} = application:ensure_all_started(lager),
+    %%{ok, _} = application:ensure_all_started(lager),
+    lager:start(),
 
     application:load(sasl),
+    set_logger_option(),
     application:set_env(sasl, sasl_error_logger, {file, "/dev/null"}),
     {ok, _} = application:ensure_all_started(sasl).
 
@@ -104,3 +105,20 @@ terminate_node(ExitCode, Message) ->
         false -> io:format(standard_error, "~s~n", [Message])
     end,
     erlang:halt(ExitCode).
+
+-ifdef(OTP_RELEASE).
+set_logger_option() ->
+    %%application:load(kernel),
+    logger:remove_handler(default).
+    %%NewFormatter = {logger_formatter, #{legacy_header => true, single_line => false, template => [msg, "\n"]}},
+    %%logger:set_handler_config(default, formatter, NewFormatter),
+    %%logger:add_primary_filter(stop_sup_reports, {fun(#{meta:=#{label:{supervisor, child_terminated}}}) ->
+                                                     %%stop;
+                                                %%(_, _) ->
+                                                     %%ignore
+                                             %%end,
+                                             %%ok}).
+-else.
+set_logger_option() ->
+    ok.
+-endif.

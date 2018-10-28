@@ -1,8 +1,9 @@
 language: erlang
 
 otp_release:
- - 20.0
- - 19.1
+ - 21.1
+ - 20.3
+ - 19.3
 
 env:
  - TASK=acceptance-basic-tests
@@ -17,9 +18,9 @@ env:
 
 matrix:
   include:
-  - otp_release: 19.1
+  - otp_release: 19.3
     env: TASK=python-lint
-  - otp_release: 19.1
+  - otp_release: 19.3
     env: TASK=python-tests
 
 addons:

@@ -32,8 +32,8 @@ script_metrics(Pools, _WorkerNodes) ->
         PoolMetrics = pool_metrics(Pools),
         normalize(PoolMetrics ++ MZBenchInternal)
     catch
-        _:Error ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(_, Error, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             system_log:error("Metrics declaration error: ~s", [mzb_script_metrics:format_error(Error)]),
             erlang:raise(error, Error, ST)
     end.

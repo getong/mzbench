@@ -1,4 +1,5 @@
 -module(mzb_k8s_plugin).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([start/2, create_cluster/3, destroy_cluster/1]).
 
@@ -60,8 +61,8 @@ create_cluster(PluginOpts, NumNodes, ClusterConfig) when is_integer(NumNodes), N
         lager:info("Pods are ssh-ready ~p", [PodNames]),
         {ok, ID, UserName, IPs}
     catch
-        C:E ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(C, E, Stack) ->
+            ST = ?GET_STACK(Stack),
             destroy_cluster(ID),
             erlang:raise(C,E,ST)
     end.

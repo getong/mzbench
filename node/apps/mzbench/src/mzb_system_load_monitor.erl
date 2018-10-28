@@ -1,4 +1,5 @@
 -module(mzb_system_load_monitor).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -behaviour(gen_server).
 
@@ -167,7 +168,7 @@ handle_info(trigger,
 
         State#state{net_stat_state = NetStat}
     catch
-        C:E -> system_log:error("Exception while getting net stats: ~p~nStacktrace: ~p", [{C,E}, erlang:get_stacktrace()]),
+        ?EXCEPTION(C, E, Stacktrace) -> system_log:error("Exception while getting net stats: ~p~nStacktrace: ~p", [{C,E}, ?GET_STACK(Stacktrace)]),
         State
     end,
 
@@ -361,4 +362,3 @@ parse_netstat_sectionV2(Str) ->
         end,
 
     {Name, [{ibytes, In}, {obytes, Out}, {ipkts, InPkts}, {opkts, OutPkts}]}.
-

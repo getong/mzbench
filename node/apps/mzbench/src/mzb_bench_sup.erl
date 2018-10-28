@@ -24,8 +24,8 @@ run_bench(ScriptPath, DefaultEnv) ->
             {error, Error} -> erlang:error({error, [mzb_string:format("Unable to start director supervisor: ~p", [Error])]})
         end
     catch _C:{error, Errors} = E when is_list(Errors) -> E;
-          C:E ->
-              ST = erlang:get_stacktrace(),
+          ?EXCEPTION(C, E, Stacktrace) ->
+              ST = ?GET_STACK(Stacktrace),
               system_log:error("Failed to run benchmark ~p:~p~n~p", [C, E, ST]),
               {error, [mzb_string:format("Failed to run benchmark", [])]}
     end.
@@ -43,8 +43,8 @@ is_ready() ->
         Apps = application:which_applications(),
         false =/= lists:keyfind(mzbench, 1, Apps)
     catch
-        _:Error ->
-            system_log:error("is_ready exception: ~p~nStacktrace: ~p", [Error, erlang:get_stacktrace()]),
+        ?EXCEPTION(_, Error, Stacktrace) ->
+            system_log:error("is_ready exception: ~p~nStacktrace: ~p", [Error, ?GET_STACK(Stacktrace)]),
             false
     end.
 
@@ -52,8 +52,8 @@ get_results() ->
     try
         mzb_director:attach()
     catch
-        _:E ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(_, E, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             Str = mzb_string:format("Unexpected error: ~p~n~p", [E, ST]),
             {error, {unexpected_error, E, ST}, Str, {[], []}}
     end.

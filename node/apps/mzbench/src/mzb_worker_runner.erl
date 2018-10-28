@@ -34,11 +34,11 @@ catch_eval(Script, State, Env, {Provider, _}) ->
         {Result, ResState} = mzbl_interpreter:eval(Script, State, Env, Provider),
         {{ok, Result}, ResState}
     catch
-        error:{mzbl_interpreter_runtime_error, {{Error, Reason}, ErrorState}} ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(error, {mzbl_interpreter_runtime_error, {{Error, Reason}, ErrorState}}, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             {{exception, {Error, Reason, ST}}, ErrorState};
-        C:E ->
-            ST = erlang:get_stacktrace(),
+        ?EXCEPTION(C, E, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             {{exception, {C, E, ST}}, unknown}
     end.
 
@@ -46,7 +46,7 @@ catch_init({Provider, Worker}) ->
     try Provider:init(Worker) of
         InitialState -> {ok, InitialState}
     catch
-        C:E -> {exception, {C, E, erlang:get_stacktrace()}}
+        ?EXCEPTION(C, E, Stacktrace) -> {exception, {C, E, ?GET_STACK(Stacktrace)}}
     end.
 
 catch_terminate({ok, Res}, {WorkerProvider, _}, WorkerState) ->
@@ -54,8 +54,8 @@ catch_terminate({ok, Res}, {WorkerProvider, _}, WorkerState) ->
         WorkerProvider:terminate(Res, WorkerState),
         {ok, Res}
     catch
-        Class:Error ->
-            {exception, node(), {Class, Error, erlang:get_stacktrace()}, WorkerState}
+        ?EXCEPTION(Class, Error, Stacktrace) ->
+            {exception, node(), {Class, Error, ?GET_STACK(Stacktrace)}, WorkerState}
     end;
 catch_terminate({exception, Spec}, _, unknown) ->
     %% do not call terminate in this case because worker provider
@@ -66,9 +66,6 @@ catch_terminate({exception, Spec}, {WorkerProvider, _}, WorkerState) ->
         WorkerProvider:terminate(Spec, WorkerState),
         {exception, node(), Spec, WorkerState}
     catch
-        Class:Error ->
-            ST = erlang:get_stacktrace(),
-            {exception, node(), {Class, Error, ST}, unknown}
+        ?EXCEPTION(Class, Error, Stacktrace) ->
+            {exception, node(), {Class, Error, ?GET_STACK(Stacktrace)}, unknown}
     end.
-
-

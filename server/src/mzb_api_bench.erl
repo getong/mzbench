@@ -1,6 +1,7 @@
 -module(mzb_api_bench).
 
 -behaviour(mzb_pipeline).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -export([
     start_link/2,
@@ -415,8 +416,8 @@ handle_stage(finalize, deallocating_hosts, #{deallocator:= Deallocator} = State)
             info("Deallocator has started", [], State),
             Deallocator(),
             ok
-        catch _C:E ->
-            ST = erlang:get_stacktrace(),
+        catch ?EXCEPTION(_C, E, Stacktrace) ->
+            ST = ?GET_STACK(Stacktrace),
             error("Deallocation has failed with reason: ~p~nStacktrace: ~p", [E, ST], State),
             retry
         end
@@ -562,16 +563,16 @@ terminate(Reason, #{id:= Id} = State) ->
                                     Res = handle_stage(finalize, Stage, NewState),
                                     Res
                                 catch
-                                    _C:E ->
-                                        ST = erlang:get_stacktrace(),
+                                    ?EXCEPTION(_C, E, Stacktrace) ->
+                                        ST = ?GET_STACK(Stacktrace),
                                         error("Stage 'finalize - ~s': failed~n~s", [Stage, format_error(Stage, {E, ST})], NewState)
                                 end
                             end, Stages),
 
                 timer:cancel(Timer)
             catch
-                Class:Error ->
-                    Stacktrace= erlang:get_stacktrace(),
+                ?EXCEPTION(Class, Error, Stack) ->
+                    Stacktrace= ?GET_STACK(Stack),
                     lager:error("Finalizing process for #~p has crashed with reason: ~p~n~p", [Id, Error, Stacktrace]),
                     erlang:raise(Class, Error, Stacktrace)
             end
@@ -682,8 +683,8 @@ send_email_report(Emails, #{id:= Id,
             end, Emails),
         ok
     catch
-        _:Error ->
-            {error, {Error, erlang:get_stacktrace()}}
+        ?EXCEPTION(_, Error, Stacktrace) ->
+            {error, {Error, ?GET_STACK(Stacktrace)}}
     end;
 send_email_report(_Emails, Status) ->
     {error, {badarg, Status}}.
@@ -1034,8 +1035,8 @@ aggregate_results(Metrics, Histograms, #{config:= Config} = State) ->
             try
                 aggregate_results_for_metric(M, Config, Percentiles, Histograms)
             catch
-                _:Error ->
-                    error("Aggregating result for ~p failed: ~p~nStacktrace: ~p", [M, Error, erlang:get_stacktrace()], State),
+                ?EXCEPTION(_, Error, Stacktrace) ->
+                    error("Aggregating result for ~p failed: ~p~nStacktrace: ~p", [M, Error, ?GET_STACK(Stacktrace)], State),
                     []
             end
         end, Flatten),

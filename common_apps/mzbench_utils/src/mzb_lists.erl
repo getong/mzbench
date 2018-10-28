@@ -1,4 +1,5 @@
 -module(mzb_lists).
+-include_lib("../mzbench_language/include/mzbl_types.hrl").
 
 -export(
    [
@@ -34,7 +35,7 @@ pmap(Fun, List) ->
             Res = try
                 {Ref, {ok, Fun(Element)}}
             catch
-                C:E -> {Ref, {exception, {C,E,erlang:get_stacktrace()}}}
+                ?EXCEPTION(C, E, Stacktrace) -> {Ref, {exception, {C,E, ?GET_STACK(Stacktrace)}}}
             end,
             Self ! Res
         end),

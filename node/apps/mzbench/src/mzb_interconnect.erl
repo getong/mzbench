@@ -1,4 +1,5 @@
 -module(mzb_interconnect).
+-include_lib("mzbench_language/include/mzbl_types.hrl").
 
 -behaviour(gen_server).
 
@@ -96,8 +97,8 @@ multi_call(Nodes, Req, Timeout) ->
             try call(N, Req, Timeout) of
                 R -> {ok, {N, R}}
             catch
-                _:Reason ->
-                    lager:error("Call ~p to ~p failed with reason: ~p~n~p", [Req, N, Reason, erlang:get_stacktrace()]),
+                ?EXCEPTION(_, Reason, Stacktrace) ->
+                    lager:error("Call ~p to ~p failed with reason: ~p~n~p", [Req, N, Reason, ?GET_STACK(Stacktrace)]),
                     {bad, N}
             end
         end, Nodes),
@@ -168,8 +169,8 @@ handle_call({call, Node, Req}, From, State) when Node == node() ->
         noreply -> {noreply, State};
         {reply, Res} -> {reply, {ok, Res}, State}
     catch
-        C:E ->
-            {reply, {exception, {C,E,erlang:get_stacktrace()}}, State}
+        ?EXCEPTION(C, E, Stacktrace) ->
+            {reply, {exception, {C,E, ?GET_STACK(Stacktrace)}}, State}
     end;
 
 handle_call({call, Node, Req}, From, State) ->
@@ -181,8 +182,8 @@ handle_call({call_director, Req}, From, #s{role = director} = State) ->
         noreply -> {noreply, State};
         {reply, Res} -> {reply, {ok, Res}, State}
     catch
-        C:E ->
-            {reply, {exception, {C,E,erlang:get_stacktrace()}}, State}
+        ?EXCEPTION(C, E, Stacktrace) ->
+            {reply, {exception, {C,E, ?GET_STACK(Stacktrace)}}, State}
     end;
 
 handle_call({call_director, _Req}, _From, #s{role = worker, director = undefined} = State) ->
@@ -262,8 +263,8 @@ handle_cast({from_remote, {call, {FromNode, From}, Msg}}, State) ->
         noreply -> ok;
         {reply, Res} -> ReplyFun(Res)
     catch
-        C:E ->
-            send_to(FromNode, {reply, From, {exception, {C,E,erlang:get_stacktrace()}}}, State)
+        ?EXCEPTION(C, E, Stacktrace) ->
+            send_to(FromNode, {reply, From, {exception, {C,E, ?GET_STACK(Stacktrace)}}}, State)
     end,
     {noreply, State};
 
@@ -309,8 +310,8 @@ handle_message(Msg, ReplyFun, #s{handler  = Handler}) ->
         {reply, Res} -> {reply, Res};
         noreply -> noreply
     catch
-        _:E ->
-            system_log:error("Handler for ~p has crashed at ~p: ~p~n~p", [Msg, node(), E, erlang:get_stacktrace()]),
+        ?EXCEPTION(_, E, Stacktrace) ->
+            system_log:error("Handler for ~p has crashed at ~p: ~p~n~p", [Msg, node(), E, ?GET_STACK(Stacktrace)]),
             noreply
     end.
 
